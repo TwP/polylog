@@ -10,10 +10,10 @@ task 'gem:release' => 'spec:run'
 
 
 Bones {
-  name     'rall'
+  name     'polylog'
   authors  'Tim Pease'
   email    'tim.pease@gmail.com'
-  url      'http://rubygems.org/gems/rall'
+  url      'http://rubygems.org/gems/polylog'
 
   spec.opts << '--color' << '--format documentation'
 
@@ -21,5 +21,6 @@ Bones {
 
   depend_on  'bones-rspec',  :development => true
   depend_on  'bones-git',    :development => true
+  depend_on  'rdoc',         :development => true
 }
 

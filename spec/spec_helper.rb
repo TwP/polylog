@@ -1,5 +1,5 @@
 
-require File.expand_path('../../lib/rall', __FILE__)
+require File.expand_path('../../lib/polylog', __FILE__)
 
 RSpec.configure do |config|
   # == Mock Framework
