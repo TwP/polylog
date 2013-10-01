@@ -1,22 +1,77 @@
 
 module Polylog
+  extend self
 
-  # :stopdoc:
-  LIBPATH = ::File.expand_path(::File.dirname(__FILE__)) + ::File::SEPARATOR
-  PATH = ::File.dirname(LIBPATH) + ::File::SEPARATOR
-  # :startdoc:
-
-  # Returns the version string for the library.
   #
-  def self.version
+  def logger( object = nil )
+    name = logger_name object
+    provider.logger name
+  end
+
+  #
+  def provider
+    use_provider('null') unless defined? @provider
+    @provider
+  end
+
+  #
+  def use_provider( name )
+    name = name.to_s
+    raise Polylog::UnknownProvider, "unkonwn provider: #{name.inspect}" unless @providers.key? name
+
+    @provider = @providers[name]
+  end
+
+  #
+  def register_provider( name, provider )
+    @providers ||= Hash.new
+
+    name = name.to_s
+    @providers[name] = provider
+  end
+
+  #
+  def logger_name( object )
+    case object
+    when nil, String; object
+    when Symbol; object.to_s
+    when Module; logger_name_for_module(object)
+    when Object; logger_name_for_module(object.class)
+    end
+  end
+
+  # Internal:
+  #
+  def logger_name_for_module( mod )
+    return mod.name unless mod.name.nil? or mod.name.empty?
+
+    # check if we have a metaclass (or eigenclass)
+    if mod.ancestors.include? Class
+      mod.inspect =~ %r/#<Class:([^#>]+)>/
+      return $1
+    end
+
+    # see if we have a superclass
+    if mod.respond_to? :superclass
+      return logger_name_for_module(mod.superclass)
+    end
+
+    # we have an anonymous module
+    return nil
+  end
+
+  LIBPATH = ::File.expand_path('../', __FILE__)
+  PATH    = ::File.dirname(LIBPATH)
+
+  # Returns the version String for the library.
+  def version
     @version ||= File.read(path('version.txt')).strip
   end
 
-  # Returns the library path for the module. If any arguments are given,
-  # they will be joined to the end of the libray path using
-  # <tt>File.join</tt>.
-  #
-  def self.libpath( *args )
+  # Internal: Returns the library path for the module. If any arguments are
+  # given, they will be joined to the end of the libray path using
+  # `File.join`.
+  def libpath( *args )
     rv =  args.empty? ? LIBPATH : ::File.join(LIBPATH, args.flatten)
     if block_given?
       begin
@@ -29,11 +84,9 @@ module Polylog
     return rv
   end
 
-  # Returns the lpath for the module. If any arguments are given,
-  # they will be joined to the end of the path using
-  # <tt>File.join</tt>.
-  #
-  def self.path( *args )
+  # Internal: Returns the lpath for the module. If any arguments are given,
+  # they will be joined to the end of the path using `File.join`.
+  def path( *args )
     rv = args.empty? ? PATH : ::File.join(PATH, args.flatten)
     if block_given?
       begin
@@ -46,5 +99,8 @@ module Polylog
     return rv
   end
 
-end  # module Polylog
+end
+
+require Polylog.libpath('polylog/errors')
+require Polylog.libpath('polylog/null_provider')
 
