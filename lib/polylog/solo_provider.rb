@@ -6,6 +6,19 @@ module Polylog
   #
   # The NullLogger uses the SoloProvider to register itself under the "null"
   # provider name.
+  #
+  # Examples
+  #
+  #     Polylog.register_provider 'stdout', Polylog::SoloProvider.new(Logger.new(STDOUT))
+  #     Polylog.register_provider 'stderr', Polylog::SoloProvider.new(Logger.new(STDERR))
+  #     Polylog.register_provider 'file',   Polylog::SoloProvider.new(Logger.new('app.log'))
+  #
+  #     Polylog.use_provider 'stderr'
+  #     logger = Polylog.logger     # returns a STDERR logger
+  #
+  #     Polylog.use_provider 'file'
+  #     logger = Polylog.logger     # returns an 'app.log' file logger
+  #
   class SoloProvider
 
     # Constructs a new SoloProvider that will provide the same instance for

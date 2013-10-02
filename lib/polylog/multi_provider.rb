@@ -11,7 +11,7 @@ module Polylog
   # STDOUT. You might want to do this when debugging the class; you can set
   # the logger level to debug and capture lots of text to a single location.
   #
-  # Example
+  # Examples
   #
   #     provider = Polylog::MultiProvider.new(Logger.new(STDOUT))
   #     provider['MyClass'] = Logger.new('my_class.log')
