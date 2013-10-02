@@ -102,5 +102,5 @@ module Polylog
 end
 
 require Polylog.libpath('polylog/errors')
-require Polylog.libpath('polylog/null_provider')
-
+require Polylog.libpath('polylog/solo_provider')
+require Polylog.libpath('polylog/null_logger')
