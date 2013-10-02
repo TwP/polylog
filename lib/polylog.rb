@@ -58,7 +58,15 @@ module Polylog
     @providers[name] = provider
   end
 
-  # Internal:
+  # Internal: Given any ruby object, try to construct a sensible logger name
+  # to use for looking up specific logger instances from a provider. For
+  # nearly every object passed in this will be the class name of the instance.
+  #
+  # If you pass in `nil` or a String then the original object is return.
+  # Symbols will be converted to Strings.
+  #
+  # The only objects we cannot generate a logger name for are anonymous
+  # modules. For these we just return `nil`.
   #
   # object - Any ruby object
   #
@@ -72,7 +80,9 @@ module Polylog
     end
   end
 
-  # Internal:
+  # Internal: Generate logger names for classes, modules, singleton classes,
+  # and anonymous modules. For all of these we use the class name or the
+  # module name. For anonymous modules we return `nil`.
   #
   # mod - A Module or Class
   #
@@ -104,7 +114,7 @@ module Polylog
   end
 
   # Internal: Returns the library path for the module. If any arguments are
-  # given, they will be joined to the end of the libray path using
+  # given, they will be joined to the end of the library path using
   # `File.join`.
   def libpath( *args )
     rv =  args.empty? ? LIBPATH : ::File.join(LIBPATH, args.flatten)
@@ -119,7 +129,7 @@ module Polylog
     return rv
   end
 
-  # Internal: Returns the lpath for the module. If any arguments are given,
+  # Internal: Returns the path for the module. If any arguments are given,
   # they will be joined to the end of the path using `File.join`.
   def path( *args )
     rv = args.empty? ? PATH : ::File.join(PATH, args.flatten)
@@ -138,4 +148,5 @@ end
 
 require Polylog.libpath('polylog/errors')
 require Polylog.libpath('polylog/solo_provider')
+require Polylog.libpath('polylog/multi_provider')
 require Polylog.libpath('polylog/null_logger')
