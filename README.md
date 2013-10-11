@@ -181,8 +181,8 @@ And that's pretty much it.
 ### Developing
 
 Polylog makes use of Mr Bones to handle general project tasks such as running
-tests, generating a gem file, interacting with **GitHub**, and publishing
-to **rubygems.org**. A `script/bootstrap` script is provided to setup the
+tests, generating a gem file, interacting with GitHub, and publishing
+to rubygems.org. A `script/bootstrap` script is provided to setup the
 development environment:
 
 ```shell
