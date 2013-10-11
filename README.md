@@ -1,10 +1,142 @@
-rall
-====
+## polylog
 
-Ruby Abstract Logging Layer
+Decoupling the logging layer since 2012
 
-Description
------------
+### Description
+
+Logging provides a simple mechanism for observing the state of a running
+application, and most ruby gems and applications use some sort of logging.
+This is great! Setting up a logging infrastructure across various gems and
+applications is the not so great part.
+
+In a Rails application it is assumed that all gems will use the `Rails.logger`
+and that's the end of it. So as a gem developer you can just grab the Rails
+logger and be done. The downside of that choice is your gem is now locked to
+Rails and cannot be used elsewhere. Another option is to provide a
+`setup( options = {} )` method (or something similar) and the application can
+provide you with a logger. The downside of that choice is that applications
+need to configure your gem and every other gem that adopts the same
+convention.
+
+A third option is to be clever and see if the Rails module exists when your
+gem is loaded and then just grab the Rails logger. This makes testing
+difficult and can lead to unintended side effects. Eschew clever code.
+
+Polylog is an agreement between the gem developer and the application
+developer on how logging is configured. For the gem developer, instead of
+assuming the Rails environment or providing a `setup` method you ask Polylog
+for a logger instance. For the application developer, instead of configuring
+logging for multiple gems you configure Polylog with the logging
+infrastructure you plan on using.
+
+The gem developer no longer needs to worry what the application is going to
+do. The logging for the gem does not need to be configured by the application.
+Conversely, the application does not have to configure logging for every gem.
+The application provides the logging infrastructure once to Polylog.
+
+Let's see what this looks like in practice.
+
+### Usage
+
+The two primary use cases for Polylog are:
+
+* obtaining a logger
+* configuring the logging provider
+
+Obtaining a logger is the domain of the gem developer (or supporting
+application code). Configuring the logging provider is the domain of the
+application.
+
+#### Obtaining a Logger
+
+Obtaining a logger is simple:
+
+```ruby
+Polylog.logger self
+```
+
+Passing `self` is optional but recommended. It provides context to Polylog and
+allows object specific loggers to be returned (actually, they are class
+specific). The application can configure different logger instances to be
+returned depending upon the requesting class. This is useful if you want to
+enable debugging for just one portion of the application.
+
+In practice, you can create a module and include it where you want a `logger`
+method to be available:
+
+```ruby
+module MyGem::Logger
+  def logger
+    Polylog.logger self
+  end
+end
+
+class MyGem::SomeClass
+  include MyGem::Logger
+end
+```
+
+In this example each class in `MyGem` can obtain its own unique logger if
+Polylog is configured to do so. But you can also develop your gem to use a
+single logger instance, too.
+
+```ruby
+module MyGem::Logger
+  def logger
+    Polylog.logger 'MyGem'
+  end
+end
+```
+
+Instead of passing `self` the top level namespace of the gem is used. Anywhere
+this logger module is included the returned logger will be the same.
+
+#### Configuring the Logging Provider
+
+Without any configuration Polylog with provide a null logger for all requests.
+This logger implements all the methods of the Ruby `Logger` class, but all the
+methods do nothing. Not very useful except for preventing exceptions.
+
+So lets log everything to standard out (a useful start):
+
+```ruby
+provider = Polylog::SoloProvider.new(Logger.new(STDOUT))
+Polylog.register_provider('stdout', provider)
+
+Polylog.use_provider 'stdout'
+```
+
+Yikes! That looks pretty complicated. 
+
+
+----
+
+**Random notes below this point - still a work in progress.**
+
+----
+
+Including a method for logging events and actions 
+
+In Ruby there is no agreed upon way to obtain a `Logger` instance. Each
+library developer is left to their own devices. The two most often used
+strategies are to either provide an accessor method or to assume the Rails
+environment is present and use the `Rails.logger`.
+
+The disadvantage of the latter approach is that the library is now constrained
+to operate in just the Rails environment. This is fine for some cases, but 
+
+logger accessor .
+a problem 
+Generating log messages is a good software practice, but where to send those
+messages? If you're writing a gem it makes sense to use the Ruby `Logger`
+class and write to standard out for testing.
+
+Each gem or library that a user includes in an application will require some
+sort of logging configuration - at least for those that have implemented
+logging.
+
+which logging implementation to use at runtime. 
+
 
 The goal of the Ruby Abstract Logging Layer is to enable gems and libraries to
 generate log messages without specifying a specific type of **Logger** or
@@ -53,7 +185,7 @@ Requirements
 Install
 -------
 
-    gem install rall
+    gem install polylog
 
 * FIXME (sudo gem install, anything else)
 
