@@ -2,7 +2,12 @@
 module Polylog
   extend self
 
+  # Request a logger instance for the given object from the configured
+  # provider.
   #
+  # object - Any ruby object
+  #
+  # Returns a logger instance from the provider.
   def logger( object = nil )
     name = logger_name object
     provider.logger name
@@ -49,12 +54,17 @@ module Polylog
   # Raises a Polylog::InvalidProvider exception.
   def register_provider( name, provider )
     @providers ||= Hash.new
+    name = name.to_s
 
-    unless provider.respond_to?(:logger) && provider.method(:logger).arity == 1
-      raise Polylog::InvalidProvider, '`logger` method not found or has wrong arity'
+    unless provider.respond_to?(:logger)
+      raise Polylog::InvalidProvider, "`logger` method not found for provider #{name.inspect}"
     end
 
-    name = name.to_s
+    arity = provider.method(:logger).arity
+    unless 1 == arity
+      raise Polylog::InvalidProvider, "`logger` method arity must be 1; arity is #{arity} for provider #{name.inspect}"
+    end
+
     @providers[name] = provider
   end
 
