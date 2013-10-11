@@ -101,139 +101,100 @@ So lets log everything to standard out (a useful start):
 
 ```ruby
 provider = Polylog::SoloProvider.new(Logger.new(STDOUT))
-Polylog.register_provider('stdout', provider)
+Polylog.register_provider 'stdout', provider
 
 Polylog.use_provider 'stdout'
 ```
 
-Yikes! That looks pretty complicated. 
+Yikes! That looks pretty complicated. The three lines of code are the three
+steps to configuring a logging provider.
 
+The first line creates the provider we are going to use. The `SoloProvider`
+provides exactly one logger. In the example it is providing a standard Ruby
+`Logger` configured to log everything to `STDOUT`.
 
-----
+The second line registers the provider we created with Polylog. Multiple
+providers can be registered but only one will be used. Each provider is
+registered with a unique name. Logging frameworks like
+[Log4r](https://github.com/colbygk/log4r), [Logging](https://github.com/twp/logging),
+and [Scrolls](https://github.com/asenchi/scrolls) can register themselves with
+Polylog. In this case, applications can skip the provider creation and just use
+one that is already registered.
 
-**Random notes below this point - still a work in progress.**
+The third line tells Polylog to use the 'stdout' provider. All calls to
+`Polylog.logger()` will lookup this provider and then call the `logger()`
+method implemented by the provider. In this case, it is the solo-provider
+which returns a STDOUT logger instance for all requests.
 
-----
+Lets register a few more providers:
 
-Including a method for logging events and actions 
+```ruby
+Polylog.register_provider 'stdout', Polylog::SoloProvider.new(Logger.new(STDOUT))
+Polylog.register_provider 'stderr', Polylog::SoloProvider.new(Logger.new(STDERR))
+Polylog.register_provider 'file',   Polylog::SoloProvider.new(Logger.new('app.log'))
 
-In Ruby there is no agreed upon way to obtain a `Logger` instance. Each
-library developer is left to their own devices. The two most often used
-strategies are to either provide an accessor method or to assume the Rails
-environment is present and use the `Rails.logger`.
+Polylog.use_provider 'file'
+```
 
-The disadvantage of the latter approach is that the library is now constrained
-to operate in just the Rails environment. This is fine for some cases, but 
+Even though we have providers for logging to `STDOUT` and `STDERR`, we have
+chosen to send all our logs to a file instead. It is easy enough to swap
+providers now. Because we are using the solo-provider all log messages will
+end up going to the same destination.
 
-logger accessor .
-a problem 
-Generating log messages is a good software practice, but where to send those
-messages? If you're writing a gem it makes sense to use the Ruby `Logger`
-class and write to standard out for testing.
+We can send log messages to multiple destinations by using a multi-provider.
 
-Each gem or library that a user includes in an application will require some
-sort of logging configuration - at least for those that have implemented
-logging.
+```ruby
+provider = Polylog::MultiProvider.new(Logger.new(STDOUT))
+provider['MyClass'] = Logger.new('my_class.log')
 
-which logging implementation to use at runtime. 
+Polylog.register_provider 'my_class', provider
+Polylog.use_provider 'my_class'
 
+Polylog.logger             # STDOUT logger
+Polylog.logger(MyClass)    # 'my_class.log' logger
+```
 
-The goal of the Ruby Abstract Logging Layer is to enable gems and libraries to
-generate log messages without specifying a specific type of **Logger** or
-logging destination. The choice of the **Logger** and logging destination is
-left to the application. This enables developers to include logging without
-forcing other users into a specific logging implementation.
+The multi-provider can return more than one logger instance. It is configured
+to return a default logger for all requests. However, a different logger can
+be returned based on the Class of the object passed to the `Polylog.logger()`
+method. In the example we are passing in `MyClass` to get the specific logger
+for that class; instances of `MyClass` would also return the same logger.
 
-This flexibility is incredibly useful when targeting both Rails and non-Rails
-applications.
+If you want to get more creative with your logging configuration, I highly
+recommend checking out the [Logging](https://github.com/twp/logging)
+framework. It is designed to provide unique loggers and logging destinations.
 
-The caveat of this goal is that "everyone" needs to agree to use a single
-source when requesting a **Logger** instance. The single source is an [abstract
-factory](FIXME: needs a URL). Developers request a **Logger** from the
-abstract factory, and applications specify the actual provider of those
-**Logger** instances being returned. The developer is free then to include
-logging in their code knowing that the application is not locked into their
-choice of **Logger**. Conversely, the application can choose the most
-appropriate **Logger** implementation for the task at hand: logging to stdout,
-logging to a file, or sending messages to rsyslog.
+#### Integrating With Rails
 
-In the case of Rails applications, the Rails logger is used. However, gems
-which were once constrained to explicitly constrained to using the Rails
-logger can now be used in other contexts. All in all this goal allows for
-broader reuse cases and greater sharing of the best tools inside the Ruby
-community.
+It would be wonderful if Polylog were integrated directly with Rails. This
+would require Rails to adopt the `Polylog.logger()` style of acquiring a
+logger instance. However, until that time happens, Polylog needs to be
+configured with a provider that returns the `Rails.logger` instance.
 
-Design
-------
+```ruby
+Polylog.register_provider 'rails', Polylog::SoloProvider.new(Rails.logger)
+Polylog.use_provider 'rails'
+```
 
-Factory
-- Rall.logger(obj)  #=> Logger
+And that's pretty much it.
 
-Provider
-- Register a provider
-  * configures the provider
-  * return instances when asked
+### Developing
 
-Mixin
-- Provides a `logger` method that retrieves a Rall.logger
+Polylog makes use of Mr Bones to handle general project tasks such as running
+tests, generating a gem file, interacting with **GitHub**, and publishing
+to **rubygems.org**. A `script/bootstrap` script is provided to setup the
+development environment:
 
-Requirements
-------------
+```shell
+script/bootstrap
+```
 
-* FIXME (list of requirements)
+After this is run, you can use `rake` normally to run tests. You can view all
+the available rake tasks via `rake -T`.
 
-Install
--------
+```shell
+rake -T
+rake spec
+```
 
-    gem install polylog
-
-* FIXME (sudo gem install, anything else)
-
-Developing
-----------
-
-The **rall** gem makes use of Mr Bones to handle general project tasks such as
-running tests, generating a gem file, interacting with **GitHub**, and publishing
-to **rubygem.org**. You will need to have a recent version of the **bones**
-gem installed.
-
-    gem install bones
-
-The required gem dependencies can be installed via the rake task:
-
-    rake gem:install_dependencies
-
-Mr Bones provides a number of other useful rake tasks. They can be listed via
-```rake -T```. Thanks for reading; any contributions you are willing to make
-are greatly appreciated.
-
-Author
-------
-
-Original author: Tim Pease
-
-License
--------
-
-(The MIT License)
-
-Copyright (c) 2012 by Tim Pease
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-'Software'), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Thank you for reading! Any contributions are greatly appreciated.
