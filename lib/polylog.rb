@@ -37,7 +37,7 @@ module Polylog
   # Raises a Polylog::UnknownProvider exception.
   def use_provider( name )
     name = name.to_s
-    raise Polylog::UnknownProvider, "unkonwn provider: #{name.inspect}" unless @providers.key? name
+    raise Polylog::UnknownProvider, "unknown provider: #{name.inspect}" unless @providers.key? name
 
     @provider = @providers[name]
   end
